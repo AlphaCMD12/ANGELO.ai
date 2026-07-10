@@ -311,18 +311,21 @@ async function handleSend() {
     trackMessage(text);
 
     try {
-        const messages = [
-            { role: 'system', content: SYSTEM_PROMPT },
-            ...session.messages.slice(-20).map(m => ({
-                role: m.role === 'bot' ? 'assistant' : 'user',
-                content: m.content
-            }))
-        ];
+        const messages = session.messages.slice(-20).map(m => ({
+            role: m.role,
+            content: m.content
+        }));
 
-        const response = await puter.ai.chat(messages, {
-            model: 'gemini-3.5-flash',
-            stream: true
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, history: messages })
         });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || 'Server error');
+        }
 
         removeTyping();
 
@@ -338,14 +341,39 @@ async function handleSend() {
         msgDiv.appendChild(contentDiv);
         chatContainer.appendChild(msgDiv);
 
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
         let fullText = '';
-        for await (const part of response) {
-            if (part?.text) {
-                fullText += part.text;
-                contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
-                scrollToBottom();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // keep incomplete line in buffer
+
+            for (const line of lines) {
+                if (line.trim() === '') continue;
+                try {
+                    const parsed = JSON.parse(line);
+                    if (parsed.event_type === 'text-generation' && parsed.text) {
+                        fullText += parsed.text;
+                        contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
+                        scrollToBottom();
+                    } else if (parsed.text && !parsed.event_type) {
+                        // Fallback in case Cohere changes stream format slightly
+                        fullText += parsed.text;
+                        contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
+                        scrollToBottom();
+                    }
+                } catch (e) {
+                    // Ignore partial json parse errors
+                }
             }
         }
+
         contentDiv.classList.remove('streaming');
         addCodeEnhancements(contentDiv);
 
