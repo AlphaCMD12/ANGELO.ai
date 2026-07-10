@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANGELO - Assembly of Angels Secondary School</title>
+    <meta name="description" content="ANGELO AI Chatbot - Made by Class X 2026 batch for PEP 2026">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <!-- Puter.js: Free, unlimited Gemini AI — NO API key required! -->
+    <script src="https://js.puter.com/v2/"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- DOMPurify to sanitize HTML -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <!-- Highlight.js for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="app-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <img src="logo.png" alt="ANGELO" class="sidebar-logo-img" onerror="this.style.display='none'">
+                    <span>ANGELO</span>
+                </div>
+                <button id="sidebarToggle" class="icon-btn sidebar-toggle-btn" title="Close sidebar">
+                    <i class="ph ph-sidebar-simple"></i>
+                </button>
+            </div>
+
+            <button id="newChatBtn" class="new-chat-btn">
+                <i class="ph ph-plus"></i>
+                New Chat
+            </button>
+
+            <div class="sidebar-section-label">Chats</div>
+            <div class="chat-list" id="chatList">
+                <!-- Chat items injected here -->
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="analyticsBtn" class="sidebar-footer-btn">
+                    <i class="ph ph-chart-bar"></i>
+                    Analytics
+                </button>
+                <div class="free-badge-small">
+                    <i class="ph-fill ph-lightning"></i> Free via Puter.js
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN AREA -->
+        <main class="main-area">
+            <header class="chat-header">
+                <div class="header-left">
+                    <button id="sidebarOpenBtn" class="icon-btn" title="Open sidebar">
+                        <i class="ph ph-sidebar-simple"></i>
+                    </button>
+                    <div class="header-title" id="headerTitle">New Chat</div>
+                </div>
+                <div class="header-actions">
+                    <button id="clearBtn" class="icon-btn" title="Clear current chat">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="welcome-message" id="welcomeMessage">
+                    <div class="welcome-icon">
+                        <img src="logo.png" alt="ANGELO Logo" class="welcome-logo" onerror="this.style.display='none'">
+                    </div>
+                    <h2>I'm ANGELO</h2>
+                    <p>I was made by the students of Class X 2026 batch as a showcase for the PEP 2026.</p>
+                    <p class="welcome-sub">How can I help you today?</p>
+                    <div class="welcome-chips">
+                        <button class="chip" onclick="useChip(this)">✍️ Write a Java program</button>
+                        <button class="chip" onclick="useChip(this)">🌍 General Knowledge Quiz</button>
+                        <button class="chip" onclick="useChip(this)">💻 Explain a CS concept</button>
+                        <button class="chip" onclick="useChip(this)">🔍 Search the internet</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <textarea id="messageInput" placeholder="Message ANGELO..." rows="1"></textarea>
+                    <button id="sendBtn" class="send-btn" title="Send message">
+                        <i class="ph-fill ph-paper-plane-right"></i>
+                    </button>
+                </div>
+                <div class="footer-text">
+                    <i class="ph ph-shield-check"></i>
+                    100% free via Puter.js &amp; Google Gemini · No API key required
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ANALYTICS PANEL -->
+    <div class="analytics-overlay" id="analyticsOverlay">
+        <div class="analytics-panel" id="analyticsPanel">
+            <div class="analytics-header">
+                <h2><i class="ph ph-chart-bar"></i> Analytics</h2>
+                <button id="closeAnalyticsBtn" class="icon-btn"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="analytics-body" id="analyticsBody">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
