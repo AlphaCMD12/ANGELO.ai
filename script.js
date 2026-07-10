@@ -345,6 +345,7 @@ async function handleSend() {
         const decoder = new TextDecoder('utf-8');
         let fullText = '';
         let buffer = '';
+        let lastUpdate = 0;
 
         while (true) {
             const { done, value } = await reader.read();
@@ -358,22 +359,28 @@ async function handleSend() {
                 if (line.trim() === '') continue;
                 try {
                     const parsed = JSON.parse(line);
+                    // Cohere sends 'text-generation' events with the new text chunk
                     if (parsed.event_type === 'text-generation' && parsed.text) {
                         fullText += parsed.text;
-                        contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
-                        scrollToBottom();
-                    } else if (parsed.text && !parsed.event_type) {
-                        // Fallback in case Cohere changes stream format slightly
-                        fullText += parsed.text;
-                        contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
-                        scrollToBottom();
-                    }
+                    } 
                 } catch (e) {
                     // Ignore partial json parse errors
                 }
             }
+
+            // Throttle DOM updates to prevent visual stuttering
+            const now = Date.now();
+            if (now - lastUpdate > 30) {
+                contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
+                scrollToBottom();
+                lastUpdate = now;
+            }
         }
 
+        // Final update to ensure we didn't miss the last chunk
+        contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
+        scrollToBottom();
+        
         contentDiv.classList.remove('streaming');
         addCodeEnhancements(contentDiv);
 
