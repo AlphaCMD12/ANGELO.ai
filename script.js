@@ -33,6 +33,8 @@ const analyticsBtn    = document.getElementById('analyticsBtn');
 const analyticsOverlay= document.getElementById('analyticsOverlay');
 const analyticsBody   = document.getElementById('analyticsBody');
 const closeAnalyticsBtn = document.getElementById('closeAnalyticsBtn');
+const themeToggleBtn  = document.getElementById('themeToggleBtn');
+const scrollBottomBtn = document.getElementById('scrollBottomBtn');
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let sessions = [];          // [{id, title, messages:[{role,content}], createdAt}]
@@ -82,6 +84,25 @@ function init() {
     if (window.innerWidth <= 640) {
         sidebar.classList.add('collapsed');
     }
+
+    // Theme toggle
+    const savedTheme = localStorage.getItem('angelo_theme') || 'dark';
+    if (savedTheme === 'light') applyTheme('light');
+    themeToggleBtn.addEventListener('click', () => {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        applyTheme(isLight ? 'dark' : 'light');
+    });
+
+    // Scroll-to-bottom button logic
+    chatContainer.addEventListener('scroll', () => {
+        const distFromBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
+        if (distFromBottom > 150) {
+            scrollBottomBtn.classList.add('visible');
+        } else {
+            scrollBottomBtn.classList.remove('visible');
+        }
+    });
+    scrollBottomBtn.addEventListener('click', () => scrollToBottom());
 }
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
@@ -188,6 +209,18 @@ function renderSidebar() {
     headerTitle.textContent = active ? active.title : 'ANGELO';
 }
 
+// ─── Theme Toggle ─────────────────────────────────────────────────────────────
+function applyTheme(theme) {
+    if (theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        themeToggleBtn.querySelector('i').className = 'ph ph-moon';
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        themeToggleBtn.querySelector('i').className = 'ph ph-sun';
+    }
+    localStorage.setItem('angelo_theme', theme);
+}
+
 // ─── Chat Render ──────────────────────────────────────────────────────────────
 function renderActiveSession() {
     // Clear everything except welcome message
@@ -202,7 +235,7 @@ function renderActiveSession() {
     }
     welcomeMessage.style.display = 'none';
     headerTitle.textContent = s.title;
-    s.messages.forEach(m => appendMessageDOM(m.role, m.content, false));
+    s.messages.forEach(m => appendMessageDOM(m.role, m.content, false, m.timestamp));
     scrollToBottom();
 }
 
@@ -304,12 +337,12 @@ async function handleSend() {
     const session = getActiveSession();
     if (!session) return;
 
-    // Save user message
-    session.messages.push({ role: 'user', content: text });
+    // Save user message with timestamp
+    session.messages.push({ role: 'user', content: text, timestamp: Date.now() });
     updateSessionTitle(session, text);
     saveSessions();
     renderSidebar();
-    appendMessageDOM('user', text, true);
+    appendMessageDOM('user', text, true, Date.now());
 
     isGenerating = true;
     sendBtn.disabled = true;
@@ -392,8 +425,8 @@ async function handleSend() {
         contentDiv.classList.remove('streaming');
         addCodeEnhancements(contentDiv);
 
-        // Save bot reply
-        session.messages.push({ role: 'bot', content: fullText });
+        // Save bot reply with timestamp
+        session.messages.push({ role: 'bot', content: fullText, timestamp: Date.now() });
         analytics.totalMessages++;
         saveAnalytics();
         saveSessions();

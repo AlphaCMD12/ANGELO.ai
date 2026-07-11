@@ -13,7 +13,35 @@
     --bot-msg-bg: rgba(255, 255, 255, 0.04);
     --sidebar-width: 260px;
     --header-height: 60px;
+    --input-bg: rgba(0,0,0,0.25);
+    --input-border: rgba(255,255,255,0.1);
+    --code-header-bg: rgba(0,0,0,0.4);
+    --timestamp-color: #6b7280;
 }
+
+/* ─── Light Mode ─────────────────────────── */
+[data-theme="light"] {
+    --bg-color: #f5f0e8;
+    --sidebar-bg: #ede8df;
+    --glass-bg: rgba(245, 240, 232, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --text-primary: #1a0f10;
+    --text-secondary: #4b3f35;
+    --text-muted: #8a7060;
+    --accent-color: #c49a10;
+    --accent-hover: #e5b61e;
+    --accent-dim: rgba(229, 182, 30, 0.15);
+    --user-msg-bg: rgba(229, 182, 30, 0.18);
+    --bot-msg-bg: rgba(0, 0, 0, 0.04);
+    --input-bg: rgba(255,255,255,0.7);
+    --input-border: rgba(0,0,0,0.12);
+    --code-header-bg: rgba(0,0,0,0.08);
+    --timestamp-color: #9a8070;
+}
+[data-theme="light"] .shape-1 { background: #e87a88; }
+[data-theme="light"] .shape-2 { background: #7abf9e; }
+[data-theme="light"] .shape-3 { background: #f0d060; }
+[data-theme="light"] .shape { opacity: 0.18; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -289,8 +317,22 @@ html, body {
     animation: slideUp 0.3s ease-out forwards;
     opacity: 0;
     transform: translateY(8px);
+    position: relative;
 }
 @keyframes slideUp { to { opacity:1; transform:translateY(0); } }
+
+/* ─── Timestamps ──────────────────────────── */
+.msg-timestamp {
+    font-size: 10px;
+    color: var(--timestamp-color);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+    align-self: flex-end;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+}
+.message:hover .msg-timestamp { opacity: 1; }
 
 .message.user { align-self: flex-end; flex-direction: row-reverse; }
 .message.bot { align-self: flex-start; }
@@ -423,15 +465,20 @@ html, body {
 .input-wrapper {
     display: flex;
     align-items: flex-end;
-    background: rgba(0,0,0,0.25);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: 14px;
     padding: 6px 8px;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 .input-wrapper:focus-within {
     border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px rgba(229,182,30,0.15);
+    box-shadow: 0 0 0 2px rgba(229,182,30,0.15), 0 0 18px rgba(229,182,30,0.12);
+    animation: inputPulse 2s ease-in-out infinite;
+}
+@keyframes inputPulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(229,182,30,0.15), 0 0 12px rgba(229,182,30,0.08); }
+    50% { box-shadow: 0 0 0 2px rgba(229,182,30,0.25), 0 0 22px rgba(229,182,30,0.18); }
 }
 textarea {
     flex: 1;
@@ -540,4 +587,49 @@ textarea::placeholder { color: var(--text-muted); }
     .sidebar { position: absolute; top:0; left:0; height:100%; z-index:100; }
     .sidebar:not(.collapsed) { box-shadow: 4px 0 20px rgba(0,0,0,0.5); }
     .message { max-width: 95%; }
+    /* Stack chips vertically on mobile */
+    .welcome-chips { flex-direction: column; align-items: stretch; }
+    .chip { text-align: center; }
+    /* Smaller welcome text */
+    .welcome-message h2 { font-size: 22px; }
+    .welcome-message p { font-size: 13px; }
+}
+
+/* ─── Scroll to Bottom Button ─────────────── */
+.scroll-bottom-btn {
+    position: sticky;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    color: #1a0f10;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(229,182,30,0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 50;
+    margin-left: auto;
+    margin-right: auto;
+    flex-shrink: 0;
+}
+.scroll-bottom-btn.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+.scroll-bottom-btn:hover {
+    background: var(--accent-hover);
+    transform: translateX(-50%) scale(1.1);
+}
+
+/* ─── Code header uses variable ───────────── */
+.code-header {
+    background: var(--code-header-bg);
 }
