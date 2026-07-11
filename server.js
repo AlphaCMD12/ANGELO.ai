@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { Readable } = require('stream');
+const Parser = require('rss-parser');
+const parser = new Parser();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -43,6 +45,21 @@ app.post('/api/chat', async (req, res) => {
             message: msg.content
         }));
 
+        let finalPreamble = SYSTEM_PROMPT;
+
+        // Free real-time web search via Google News RSS
+        if (message && message.match(/\b(today|now|latest|news|match|matches|score|won|lost|recently|who is|what is|when|how)\b/i)) {
+            try {
+                const feed = await parser.parseURL(`https://news.google.com/rss/search?q=${encodeURIComponent(message)}`);
+                if (feed && feed.items && feed.items.length > 0) {
+                    const topNews = feed.items.slice(0, 5).map(item => `- ${item.title}`).join('\n');
+                    finalPreamble += `\n\n[LATEST LIVE INTERNET SEARCH RESULTS FOR THIS QUERY]:\n${topNews}\n\nUse this real-time information to answer the user if applicable.`;
+                }
+            } catch (searchErr) {
+                console.error("Search error:", searchErr.message);
+            }
+        }
+
         const response = await fetch('https://api.cohere.ai/v1/chat', {
             method: 'POST',
             headers: {
@@ -54,7 +71,7 @@ app.post('/api/chat', async (req, res) => {
                 message: message,
                 model: 'command-r-08-2024',
                 stream: true,
-                preamble: SYSTEM_PROMPT,
+                preamble: finalPreamble,
                 chat_history: formattedHistory
             })
         });

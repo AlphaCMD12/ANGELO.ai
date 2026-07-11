@@ -77,6 +77,11 @@ function init() {
     });
     closeAnalyticsBtn.addEventListener('click', () => analyticsOverlay.classList.remove('active'));
     analyticsOverlay.addEventListener('click', e => { if (e.target === analyticsOverlay) analyticsOverlay.classList.remove('active'); });
+
+    // Auto-collapse sidebar on mobile
+    if (window.innerWidth <= 640) {
+        sidebar.classList.add('collapsed');
+    }
 }
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
@@ -123,6 +128,9 @@ function switchSession(id) {
     saveSessions();
     renderSidebar();
     renderActiveSession();
+    if (window.innerWidth <= 640) {
+        sidebar.classList.add('collapsed');
+    }
 }
 
 function deleteSession(id) {
