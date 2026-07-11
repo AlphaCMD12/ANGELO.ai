@@ -251,7 +251,7 @@ function appendMessageDOM(role, content, animate = true) {
     avatarDiv.classList.add('avatar');
     avatarDiv.innerHTML = role === 'user'
         ? '<i class="ph ph-user"></i>'
-        : '<img src="logo.png" alt="ANGELO" onerror="this.parentElement.innerHTML=\'<i class=\\\"ph-fill ph-sparkle\\\"></i>\'">';
+        : '<img src="logo.png" alt="ANGELO" onerror="this.style.display=\'none\'">';
 
     const contentDiv = document.createElement('div');
     contentDiv.classList.add('message-content');
@@ -310,7 +310,7 @@ function showTyping() {
     div.classList.add('message', 'bot');
     div.id = 'typingIndicator';
     div.innerHTML = `
-        <div class="avatar"><img src="logo.png" alt="ANGELO" onerror="this.parentElement.innerHTML='<i class=\\"ph-fill ph-sparkle\\"></i>'"></div>
+        <div class="avatar"><img src="logo.png" alt="ANGELO" onerror="this.style.display=\'none\'"></div>
         <div class="message-content">
             <div class="typing-indicator">
                 <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
@@ -375,7 +375,7 @@ async function handleSend() {
         msgDiv.classList.add('message', 'bot');
         const avatarDiv = document.createElement('div');
         avatarDiv.classList.add('avatar');
-        avatarDiv.innerHTML = '<img src="logo.png" alt="ANGELO" onerror="this.parentElement.innerHTML=\'<i class=\\\"ph-fill ph-sparkle\\\"></i>\'">';
+        avatarDiv.innerHTML = '<img src="logo.png" alt="ANGELO" onerror="this.style.display=\'none\'">';
         const contentDiv = document.createElement('div');
         contentDiv.classList.add('message-content', 'streaming');
         msgDiv.appendChild(avatarDiv);
