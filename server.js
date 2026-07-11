@@ -28,7 +28,9 @@ Your areas of expertise:
 5. Internet Search: Answer questions about current events using your knowledge.
 
 Format all code using markdown code fences with the correct language tag (e.g. \`\`\`java, \`\`\`python, \`\`\`html).
-Be friendly, encouraging, and student-focused.`;
+Be friendly, encouraging, and student-focused.
+
+CRITICAL RULE: Your training data is outdated. Whenever you are given [LIVE INTERNET SEARCH RESULTS] below, you MUST use ONLY those results to answer questions about current events, sports, news, or anything happening in the real world. NEVER say your knowledge has a cutoff. NEVER mention January 2023. The current date will always be provided to you.`;
 
 app.post('/api/chat', async (req, res) => {
     const { message, history } = req.body;
@@ -45,19 +47,25 @@ app.post('/api/chat', async (req, res) => {
             message: msg.content
         }));
 
-        let finalPreamble = SYSTEM_PROMPT;
+        // Always inject today's date so the model knows what time it is
+        const today = new Date().toLocaleDateString('en-GB', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        let finalPreamble = SYSTEM_PROMPT + `\n\nTODAY'S DATE: ${today}.`;
 
-        // Free real-time web search via Google News RSS
-        if (message && message.match(/\b(today|now|latest|news|match|matches|score|won|lost|recently|who is|what is|when|how)\b/i)) {
-            try {
-                const feed = await parser.parseURL(`https://news.google.com/rss/search?q=${encodeURIComponent(message)}`);
-                if (feed && feed.items && feed.items.length > 0) {
-                    const topNews = feed.items.slice(0, 5).map(item => `- ${item.title}`).join('\n');
-                    finalPreamble += `\n\n[LATEST LIVE INTERNET SEARCH RESULTS FOR THIS QUERY]:\n${topNews}\n\nUse this real-time information to answer the user if applicable.`;
-                }
-            } catch (searchErr) {
-                console.error("Search error:", searchErr.message);
+        // Free real-time web search via Google News RSS — trigger on ALL messages
+        // so the model always has fresh context
+        try {
+            const feed = await parser.parseURL(`https://news.google.com/rss/search?q=${encodeURIComponent(message)}&hl=en-IN&gl=IN&ceid=IN:en`);
+            if (feed && feed.items && feed.items.length > 0) {
+                const topNews = feed.items.slice(0, 8).map(item => {
+                    const date = item.pubDate ? new Date(item.pubDate).toDateString() : '';
+                    return `- [${date}] ${item.title}`;
+                }).join('\n');
+                finalPreamble += `\n\n[LIVE INTERNET SEARCH RESULTS — THESE ARE MORE ACCURATE THAN YOUR TRAINING DATA. USE THESE TO ANSWER THE USER]:\n${topNews}\n\nBase your answer on the above live results. Do NOT fall back to your old training data for current events.`;
             }
+        } catch (searchErr) {
+            console.error("Search error:", searchErr.message);
         }
 
         const response = await fetch('https://api.cohere.ai/v1/chat', {
