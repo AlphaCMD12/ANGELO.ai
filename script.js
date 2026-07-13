@@ -418,7 +418,7 @@ async function handleSend() {
 
             // Throttle DOM updates to prevent visual stuttering
             const now = Date.now();
-            if (now - lastUpdate > 30) {
+            if (now - lastUpdate > 100) {
                 contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
                 scrollToBottom();
                 lastUpdate = now;
@@ -568,6 +568,19 @@ function addTTSButton(container, text) {
         
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.btn = btn;
+        
+        // Find a natural-sounding English voice if available
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => 
+            v.name.includes('Google UK English Male') || 
+            v.name.includes('Google US English') ||
+            v.name.includes('Microsoft Mark') ||
+            v.name.includes('Daniel')
+        ) || voices.find(v => v.lang.startsWith('en-'));
+        
+        if (preferredVoice) {
+            utterance.voice = preferredVoice;
+        }
         
         utterance.onstart = () => {
             btn.innerHTML = '<i class="ph ph-stop"></i> Stop';
