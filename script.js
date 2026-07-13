@@ -35,6 +35,7 @@ const analyticsBody   = document.getElementById('analyticsBody');
 const closeAnalyticsBtn = document.getElementById('closeAnalyticsBtn');
 const themeToggleBtn  = document.getElementById('themeToggleBtn');
 const scrollBottomBtn = document.getElementById('scrollBottomBtn');
+const exportChatBtn   = document.getElementById('exportChatBtn');
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let sessions = [];          // [{id, title, messages:[{role,content}], createdAt}]
@@ -103,6 +104,11 @@ function init() {
         }
     });
     scrollBottomBtn.addEventListener('click', () => scrollToBottom());
+
+    // Export Notes
+    if (exportChatBtn) {
+        exportChatBtn.addEventListener('click', exportChat);
+    }
 }
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
@@ -259,6 +265,7 @@ function appendMessageDOM(role, content, animate = true) {
     if (role === 'bot') {
         contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(content));
         addCodeEnhancements(contentDiv);
+        addTTSButton(contentDiv, content);
     } else {
         contentDiv.textContent = content;
     }
@@ -424,6 +431,7 @@ async function handleSend() {
         
         contentDiv.classList.remove('streaming');
         addCodeEnhancements(contentDiv);
+        addTTSButton(contentDiv, fullText);
 
         // Save bot reply with timestamp
         session.messages.push({ role: 'bot', content: fullText, timestamp: Date.now() });
@@ -532,6 +540,77 @@ function renderAnalytics() {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function escapeHtml(text) {
     return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── TTS & Export ─────────────────────────────────────────────────────────────
+let currentUtterance = null;
+function addTTSButton(container, text) {
+    const actions = document.createElement('div');
+    actions.className = 'message-actions';
+    
+    const btn = document.createElement('button');
+    btn.className = 'tts-btn';
+    btn.innerHTML = '<i class="ph ph-speaker-high"></i> Read Aloud';
+    
+    btn.addEventListener('click', () => {
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            if (currentUtterance && currentUtterance.btn === btn) {
+                btn.innerHTML = '<i class="ph ph-speaker-high"></i> Read Aloud';
+                btn.classList.remove('playing');
+                currentUtterance = null;
+                return;
+            }
+        }
+        
+        // Clean text (remove markdown stars etc)
+        const cleanText = text.replace(/\\*\\*/g, '').replace(/#/g, '').replace(/\\[.*?\\]\\(.*?\\)/g, 'a link');
+        
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.btn = btn;
+        
+        utterance.onstart = () => {
+            btn.innerHTML = '<i class="ph ph-stop"></i> Stop';
+            btn.classList.add('playing');
+        };
+        utterance.onend = () => {
+            btn.innerHTML = '<i class="ph ph-speaker-high"></i> Read Aloud';
+            btn.classList.remove('playing');
+            currentUtterance = null;
+        };
+        
+        currentUtterance = utterance;
+        window.speechSynthesis.speak(utterance);
+    });
+    
+    actions.appendChild(btn);
+    container.appendChild(actions);
+}
+
+function exportChat() {
+    const s = getActiveSession();
+    if (!s || s.messages.length === 0) {
+        alert("There is no chat history to export yet!");
+        return;
+    }
+    
+    let content = "# ANGELO Chat Notes\\n";
+    content += "Date: " + new Date().toLocaleString() + "\\n\\n";
+    
+    s.messages.forEach(m => {
+        const roleName = m.role === 'user' ? 'YOU' : 'ANGELO';
+        content += \`### \${roleName}\\n\${m.content}\\n\\n---\\n\\n\`;
+    });
+    
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = \`ANGELO_Notes_\${Date.now()}.md\`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 // ─── Start ────────────────────────────────────────────────────────────────────
