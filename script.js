@@ -594,19 +594,19 @@ function exportChat() {
         return;
     }
     
-    let content = "# ANGELO Chat Notes\\n";
-    content += "Date: " + new Date().toLocaleString() + "\\n\\n";
+    let content = "# ANGELO Chat Notes\n";
+    content += "Date: " + new Date().toLocaleString() + "\n\n";
     
     s.messages.forEach(m => {
         const roleName = m.role === 'user' ? 'YOU' : 'ANGELO';
-        content += \`### \${roleName}\\n\${m.content}\\n\\n---\\n\\n\`;
+        content += `### ${roleName}\n${m.content}\n\n---\n\n`;
     });
     
     const blob = new Blob([content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = \`ANGELO_Notes_\${Date.now()}.md\`;
+    a.download = `ANGELO_Notes_${Date.now()}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
