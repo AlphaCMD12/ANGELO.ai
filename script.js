@@ -410,18 +410,14 @@ async function handleSend() {
                     // Cohere sends 'text-generation' events with the new text chunk
                     if (parsed.event_type === 'text-generation' && parsed.text) {
                         fullText += parsed.text;
+                        
+                        // Update instantly without artificial throttling
+                        contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
+                        scrollToBottom();
                     } 
                 } catch (e) {
                     // Ignore partial json parse errors
                 }
-            }
-
-            // Throttle DOM updates to prevent visual stuttering
-            const now = Date.now();
-            if (now - lastUpdate > 100) {
-                contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
-                scrollToBottom();
-                lastUpdate = now;
             }
         }
 
