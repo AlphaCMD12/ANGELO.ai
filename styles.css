@@ -459,6 +459,13 @@ html, body {
 .message-content a { color: var(--accent-color); text-decoration: none; }
 .message-content a:hover { text-decoration: underline; }
 .message-content strong { color: var(--text-primary); }
+.message-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 10px 0;
+    display: block;
+}
 
 /* ─── Code Blocks ─────────────────────────── */
 .message-content pre {
