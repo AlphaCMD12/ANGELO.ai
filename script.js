@@ -48,6 +48,7 @@ let analytics = { totalMessages: 0, totalChats: 0, keywords: {}, dailyActivity: 
 const SESSIONS_KEY   = 'angelo_sessions';
 const ACTIVE_KEY     = 'angelo_active';
 const ANALYTICS_KEY  = 'angelo_analytics';
+const COUNTER_KEY    = 'angelo_live_counter';
 
 // ─── Marked config ───────────────────────────────────────────────────────────
 marked.setOptions({ breaks: true, gfm: true });
@@ -67,16 +68,28 @@ function initAttractMode() {
     const liveCounterNums = document.querySelectorAll('.liveCounterNumDisplay');
     
     // Counter logic
-    if (liveCounterNums.length > 0) {
-        let currentCounter = 247 + Math.floor(Math.random() * 20);
-        liveCounterNums.forEach(el => el.innerText = currentCounter);
-        setInterval(() => {
-            if (Math.random() > 0.6) {
-                currentCounter += Math.floor(Math.random() * 3) + 1;
-                liveCounterNums.forEach(el => el.innerText = currentCounter);
-            }
-        }, 5000);
+    let savedCounter = localStorage.getItem(COUNTER_KEY);
+    if (!savedCounter) {
+        savedCounter = 247 + Math.floor(Math.random() * 20);
+        localStorage.setItem(COUNTER_KEY, savedCounter);
     }
+    window.currentLiveCounter = parseInt(savedCounter, 10);
+    
+    function refreshCounterDisplay() {
+        if (liveCounterNums.length > 0) {
+            liveCounterNums.forEach(el => el.innerText = window.currentLiveCounter);
+        }
+    }
+    refreshCounterDisplay();
+
+    // Background ticking (simulate other users slowly)
+    setInterval(() => {
+        if (Math.random() > 0.5) { // 50% chance to tick up
+            window.currentLiveCounter += 1; // ONLY jump by exactly 1
+            localStorage.setItem(COUNTER_KEY, window.currentLiveCounter);
+            refreshCounterDisplay();
+        }
+    }, 20000); // Check every 20 seconds
 
     // Attract text cycling
     if (attractTextEl) {
@@ -409,6 +422,14 @@ async function handleSend() {
     isGenerating = true;
     sendBtn.disabled = true;
     showTyping();
+
+    // Increment live counter
+    if (typeof window.currentLiveCounter !== 'undefined') {
+        window.currentLiveCounter += 1;
+        localStorage.setItem(COUNTER_KEY, window.currentLiveCounter);
+        const liveCounterNums = document.querySelectorAll('.liveCounterNumDisplay');
+        liveCounterNums.forEach(el => el.innerText = window.currentLiveCounter);
+    }
 
     // Update analytics
     trackMessage(text);
