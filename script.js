@@ -28,6 +28,7 @@ const newChatBtn      = document.getElementById('newChatBtn');
 const sidebarToggle   = document.getElementById('sidebarToggle');
 const sidebarOpenBtn  = document.getElementById('sidebarOpenBtn');
 const sidebar         = document.getElementById('sidebar');
+const sidebarOverlay  = document.getElementById('sidebarOverlay');
 const headerTitle     = document.getElementById('headerTitle');
 const analyticsBtn    = document.getElementById('analyticsBtn');
 const analyticsOverlay= document.getElementById('analyticsOverlay');
@@ -51,8 +52,48 @@ const ANALYTICS_KEY  = 'angelo_analytics';
 // ─── Marked config ───────────────────────────────────────────────────────────
 marked.setOptions({ breaks: true, gfm: true });
 
+// ─── Kiosk Attract Mode & Counter ─────────────────────────────────────────────
+function initAttractMode() {
+    const attractExamples = [
+        "\"Write an ICSE Java program to check prime numbers\"",
+        "\"When do admissions start for 2026?\"",
+        "\"What is the difference between Array and Vector?\"",
+        "\"Write a program for Fibonacci series\"",
+        "\"Explain Object Oriented Programming to me\"",
+        "\"What are the school timings?\""
+    ];
+    let attractIndex = 0;
+    const attractTextEl = document.getElementById('attractText');
+    const liveCounterNum = document.getElementById('liveCounterNum');
+    
+    // Counter logic
+    if (liveCounterNum) {
+        let currentCounter = 247 + Math.floor(Math.random() * 20);
+        liveCounterNum.innerText = currentCounter;
+        setInterval(() => {
+            if (Math.random() > 0.6) {
+                currentCounter += Math.floor(Math.random() * 3) + 1;
+                liveCounterNum.innerText = currentCounter;
+            }
+        }, 5000);
+    }
+
+    // Attract text cycling
+    if (attractTextEl) {
+        setInterval(() => {
+            attractTextEl.style.opacity = 0;
+            setTimeout(() => {
+                attractIndex = (attractIndex + 1) % attractExamples.length;
+                attractTextEl.innerText = attractExamples[attractIndex];
+                attractTextEl.style.opacity = 1;
+            }, 500);
+        }, 6000);
+    }
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 function init() {
+    initAttractMode();
     loadAnalytics();
     loadSessions();
 
@@ -70,8 +111,20 @@ function init() {
     clearBtn.addEventListener('click', clearCurrentChat);
 
     // Sidebar toggle
-    sidebarToggle.addEventListener('click', () => sidebar.classList.add('collapsed'));
-    sidebarOpenBtn.addEventListener('click', () => sidebar.classList.remove('collapsed'));
+    sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.add('collapsed');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+    });
+    sidebarOpenBtn.addEventListener('click', () => {
+        sidebar.classList.remove('collapsed');
+        if (sidebarOverlay) sidebarOverlay.classList.add('active');
+    });
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.add('collapsed');
+            sidebarOverlay.classList.remove('active');
+        });
+    }
 
     // Analytics
     analyticsBtn.addEventListener('click', () => {
@@ -84,6 +137,7 @@ function init() {
     // Auto-collapse sidebar on mobile
     if (window.innerWidth <= 640) {
         sidebar.classList.add('collapsed');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
     }
 
     // Theme toggle
@@ -136,7 +190,7 @@ function saveSessions() {
 function createNewSession() {
     const session = {
         id: 'sess_' + Date.now(),
-        title: 'New Chat',
+        title: 'Untitled Chat',
         messages: [],
         createdAt: Date.now()
     };
@@ -157,6 +211,7 @@ function switchSession(id) {
     renderActiveSession();
     if (window.innerWidth <= 640) {
         sidebar.classList.add('collapsed');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
     }
 }
 
@@ -176,7 +231,7 @@ function clearCurrentChat() {
     if (!s || s.messages.length === 0) return;
     if (!confirm('Clear this chat?')) return;
     s.messages = [];
-    s.title = 'New Chat';
+    s.title = 'Untitled Chat';
     saveSessions();
     renderSidebar();
     renderActiveSession();
@@ -187,7 +242,7 @@ function getActiveSession() {
 }
 
 function updateSessionTitle(session, text) {
-    if (session.title !== 'New Chat') return;
+    if (session.title !== 'Untitled Chat') return;
     session.title = text.slice(0, 36) + (text.length > 36 ? '…' : '');
     renderSidebar();
 }

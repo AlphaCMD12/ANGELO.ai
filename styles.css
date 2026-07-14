@@ -91,6 +91,17 @@ html, body {
     opacity: 0;
     pointer-events: none;
 }
+
+.sidebar-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(2px);
+    z-index: 90;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
 .sidebar-header {
     display: flex;
     align-items: center;
@@ -246,7 +257,7 @@ html, body {
     text-overflow: ellipsis;
     max-width: 300px;
 }
-.header-actions { display: flex; gap: 8px; }
+.header-actions { display: flex; gap: 12px; }
 
 .icon-btn {
     background: transparent;
@@ -254,14 +265,16 @@ html, body {
     color: var(--text-secondary);
     font-size: 22px;
     cursor: pointer;
-    border-radius: 8px;
-    width: 36px;
-    height: 36px;
+    border-radius: 10px;
+    width: 44px;
+    height: 44px;
     display: flex;
     justify-content: center;
     align-items: center;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 .icon-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
 
@@ -290,24 +303,80 @@ html, body {
 }
 @keyframes fadeScaleIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
 
-.welcome-icon { width: 80px; height: 80px; margin-bottom: 16px; }
-.welcome-logo { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
+.welcome-icon { width: 100px; height: 100px; margin-bottom: 20px; }
+.welcome-logo {
+    width: 100%; height: 100%; object-fit: contain; border-radius: 50%;
+    animation: logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(229,182,30,0)); }
+    50% { transform: scale(1.06); filter: drop-shadow(0 0 18px rgba(229,182,30,0.5)); }
+}
 .welcome-message h2 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
-.welcome-message p { color: var(--text-secondary); line-height: 1.5; font-size: 15px; }
+.welcome-message p { color: #e5e5e5; line-height: 1.5; font-size: 15px; }
 .welcome-sub { margin-top: 8px !important; font-weight: 600; font-size: 16px !important; color: var(--text-primary) !important; }
-.welcome-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 20px; }
+.welcome-chips {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+    max-width: 440px;
+    width: 100%;
+}
 .chip {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--glass-border);
-    color: var(--text-secondary);
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-size: 13px;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #f5f5f5;
+    border-radius: 14px;
+    padding: 12px 20px;
+    font-size: 14px;
     font-family: 'Outfit', sans-serif;
     cursor: pointer;
     transition: all 0.2s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    text-align: left;
 }
-.chip:hover { background: var(--accent-dim); border-color: rgba(229,182,30,0.4); color: var(--text-primary); }
+.chip:hover { background: rgba(229,182,30,0.2); border-color: rgba(229,182,30,0.4); color: #ffffff; }
+
+/* ─── Kiosk Attract Mode & Counter ──────────── */
+.live-counter {
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+.live-dot {
+    width: 8px; height: 8px;
+    background: #4ade80;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(74,222,128,0.6);
+    animation: pulseDot 2s infinite;
+}
+@keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+#liveCounterNum { font-weight: 700; color: var(--text-primary); }
+
+.attract-mode {
+    margin-top: 20px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    padding: 14px 20px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 440px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: opacity 0.5s ease;
+}
+.attract-label { font-size: 11px; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.attract-text { font-size: 15px; color: var(--text-primary); font-style: italic; transition: opacity 0.5s ease; }
 
 /* ─── Messages ────────────────────────────── */
 .message {
@@ -517,7 +586,7 @@ textarea {
     border: none;
     color: var(--text-primary);
     font-family: 'Outfit', sans-serif;
-    font-size: 15px;
+    font-size: 16px; /* 16px prevents iOS Safari auto-zoom */
     resize: none;
     padding: 8px 10px;
     max-height: 160px;
@@ -529,8 +598,8 @@ textarea::placeholder { color: var(--text-muted); }
     background: var(--accent-color);
     color: #1a0f10;
     border: none;
-    width: 38px; height: 38px;
-    border-radius: 10px;
+    width: 44px; height: 44px;
+    border-radius: 12px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -539,6 +608,8 @@ textarea::placeholder { color: var(--text-muted); }
     transition: all 0.2s ease;
     margin-bottom: 1px;
     flex-shrink: 0;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 .send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
 .send-btn:disabled { background: rgba(255,255,255,0.1); color: var(--text-muted); cursor: not-allowed; transform: none; }
@@ -618,12 +689,17 @@ textarea::placeholder { color: var(--text-muted); }
     .sidebar { position: absolute; top:0; left:0; height:100%; z-index:100; }
     .sidebar:not(.collapsed) { box-shadow: 4px 0 20px rgba(0,0,0,0.5); }
     .message { max-width: 95%; }
-    /* Stack chips vertically on mobile */
-    .welcome-chips { flex-direction: column; align-items: stretch; }
+    /* Stack chips single column on mobile */
+    .welcome-chips { grid-template-columns: 1fr; }
     .chip { text-align: center; }
     /* Smaller welcome text */
     .welcome-message h2 { font-size: 22px; }
     .welcome-message p { font-size: 13px; }
+    
+    .sidebar-overlay.active { 
+        display: block; 
+        opacity: 1; 
+    }
 }
 
 /* ─── Scroll to Bottom Button ─────────────── */

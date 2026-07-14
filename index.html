@@ -56,11 +56,12 @@
                     <i class="ph ph-download-simple"></i>
                     Export Notes
                 </button>
-                <div class="free-badge-small">
-                    <i class="ph-fill ph-lightning"></i> Free via Puter.js
-                </div>
+
             </div>
         </aside>
+
+        <!-- MOBILE SIDEBAR OVERLAY -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <!-- MAIN AREA -->
         <main class="main-area">
@@ -95,6 +96,15 @@
                         <button class="chip" onclick="useChip(this)">✍️ Write a Java program</button>
                         <button class="chip" onclick="useChip(this)">💻 Explain a CS concept</button>
                     </div>
+                    
+                    <div class="live-counter">
+                        <span class="live-dot"></span> <span id="liveCounterNum">247</span> questions answered today
+                    </div>
+
+                    <div class="attract-mode" id="attractMode">
+                        <div class="attract-label">Try asking:</div>
+                        <div class="attract-text" id="attractText">"Write an ICSE Java program to check prime numbers"</div>
+                    </div>
                 </div>
                 <!-- Scroll to bottom floating button -->
                 <button id="scrollBottomBtn" class="scroll-bottom-btn" title="Scroll to bottom">
@@ -110,8 +120,8 @@
                     </button>
                 </div>
                 <div class="footer-text">
-                    <i class="ph ph-shield-check"></i>
-                    100% free via Puter.js &amp; Google Gemini · No API key required
+                    <i class="ph ph-graduation-cap"></i>
+                    Ask me anything about ICSE Java, school info & more
                 </div>
             </div>
         </main>
