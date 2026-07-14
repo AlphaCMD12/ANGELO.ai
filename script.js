@@ -64,16 +64,16 @@ function initAttractMode() {
     ];
     let attractIndex = 0;
     const attractTextEl = document.getElementById('attractText');
-    const liveCounterNum = document.getElementById('liveCounterNum');
+    const liveCounterNums = document.querySelectorAll('.liveCounterNumDisplay');
     
     // Counter logic
-    if (liveCounterNum) {
+    if (liveCounterNums.length > 0) {
         let currentCounter = 247 + Math.floor(Math.random() * 20);
-        liveCounterNum.innerText = currentCounter;
+        liveCounterNums.forEach(el => el.innerText = currentCounter);
         setInterval(() => {
             if (Math.random() > 0.6) {
                 currentCounter += Math.floor(Math.random() * 3) + 1;
-                liveCounterNum.innerText = currentCounter;
+                liveCounterNums.forEach(el => el.innerText = currentCounter);
             }
         }, 5000);
     }

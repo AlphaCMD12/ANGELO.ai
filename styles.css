@@ -359,7 +359,18 @@ html, body {
     animation: pulseDot 2s infinite;
 }
 @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-#liveCounterNum { font-weight: 700; color: var(--text-primary); }
+.liveCounterNumDisplay { font-weight: 700; color: var(--text-primary); }
+
+.sidebar-live-counter {
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    padding: 0 12px;
+}
 
 .attract-mode {
     margin-top: 20px;
