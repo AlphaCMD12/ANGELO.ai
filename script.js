@@ -602,75 +602,83 @@ function escapeHtml(text) {
 }
 
 // ─── TTS & Export ─────────────────────────────────────────────────────────────
-let currentUtterance = null;
+const RV_VOICE   = 'UK English Male'; // ResponsiveVoice voice name
+let ttsPlaying   = false;
+let ttsBtnActive = null;
+
+function stopTTS() {
+    if (typeof responsiveVoice !== 'undefined' && responsiveVoice.isPlaying()) {
+        responsiveVoice.cancel();
+    } else if (window.speechSynthesis && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
+    ttsPlaying = false;
+    if (ttsBtnActive) {
+        ttsBtnActive.innerHTML = '<i class="ph ph-speaker-high"></i> Read Aloud';
+        ttsBtnActive.classList.remove('playing');
+        ttsBtnActive = null;
+    }
+}
+
 function addTTSButton(container, text) {
     const actions = document.createElement('div');
     actions.className = 'message-actions';
-    
+
     const btn = document.createElement('button');
     btn.className = 'tts-btn';
     btn.innerHTML = '<i class="ph ph-speaker-high"></i> Read Aloud';
-    
+
     btn.addEventListener('click', () => {
-        if (window.speechSynthesis.speaking) {
-            window.speechSynthesis.cancel();
-            if (currentUtterance && currentUtterance.btn === btn) {
-                btn.innerHTML = '<i class="ph ph-speaker-high"></i> Read Aloud';
-                btn.classList.remove('playing');
-                currentUtterance = null;
-                return;
-            }
-        }
-        
-        // Clean text (remove markdown stars etc)
-        const cleanText = text.replace(/\\*\\*/g, '').replace(/#/g, '').replace(/\\[.*?\\]\\(.*?\\)/g, 'a link');
-        
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.btn = btn;
-        
-        // Pick the best available male English voice (priority order)
-        function pickVoice() {
-            const voices = window.speechSynthesis.getVoices();
-            const priority = [
-                'Google UK English Male',
-                'Microsoft Ryan Online (Natural) - English (United Kingdom)',
-                'Microsoft Guy Online (Natural) - English (United States)',
-                'Microsoft Mark - English (United States)',
-                'Daniel',          // macOS male
-                'Google US English',
-                'Alex',            // macOS fallback
-                'Fred',            // macOS fallback
-            ];
-            for (const name of priority) {
-                const match = voices.find(v => v.name === name);
-                if (match) return match;
-            }
-            // Last resort: any English voice
-            return voices.find(v => v.lang.startsWith('en-')) || null;
+        // If already playing — stop
+        if (ttsPlaying) {
+            stopTTS();
+            return;
         }
 
-        const chosenVoice = pickVoice();
-        if (chosenVoice) utterance.voice = chosenVoice;
-        utterance.rate  = 0.95;  // slightly slower = clearer
-        utterance.pitch = 0.95;  // slightly deeper = more natural
-        
-        utterance.onstart = () => {
-            btn.innerHTML = '<i class="ph ph-stop"></i> Stop';
-            btn.classList.add('playing');
-        };
-        utterance.onend = () => {
-            btn.innerHTML = '<i class="ph ph-speaker-high"></i> Read Aloud';
-            btn.classList.remove('playing');
-            currentUtterance = null;
-        };
-        
-        currentUtterance = utterance;
-        window.speechSynthesis.speak(utterance);
+        // Strip markdown formatting from the text
+        const cleanText = text
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/#+\s/g, '')
+            .replace(/`{1,3}[^`]*`{1,3}/g, 'code block')
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+            .replace(/!\[.*?\]\(.*?\)/g, '')
+            .trim();
+
+        ttsPlaying = true;
+        ttsBtnActive = btn;
+        btn.innerHTML = '<i class="ph ph-stop"></i> Stop';
+        btn.classList.add('playing');
+
+        // Use ResponsiveVoice if available (online), else fallback to Web Speech
+        if (typeof responsiveVoice !== 'undefined') {
+            responsiveVoice.speak(cleanText, RV_VOICE, {
+                rate: 0.95,
+                pitch: 1,
+                volume: 1,
+                onend: () => stopTTS(),
+                onerror: () => stopTTS()
+            });
+        } else {
+            // Offline fallback: Web Speech API
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.rate  = 0.95;
+            utterance.pitch = 0.95;
+            const voices = window.speechSynthesis.getVoices();
+            const fallbackVoice = voices.find(v =>
+                v.name.includes('Male') || v.name.includes('Daniel') || v.name.includes('Mark')
+            ) || voices.find(v => v.lang.startsWith('en-'));
+            if (fallbackVoice) utterance.voice = fallbackVoice;
+            utterance.onend   = () => stopTTS();
+            utterance.onerror = () => stopTTS();
+            window.speechSynthesis.speak(utterance);
+        }
     });
-    
+
     actions.appendChild(btn);
     container.appendChild(actions);
 }
+
 
 function exportChat() {
     const s = getActiveSession();
