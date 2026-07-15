@@ -12,6 +12,58 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// ─── Live Counter & Presence ──────────────────────────────────────────────────
+let liveQuestionCount = 0; // starts at 0, only real messages increment it
+const connectedClients = new Set();
+
+// GET counter value
+app.get('/api/counter', (req, res) => {
+    res.json({ count: liveQuestionCount });
+});
+
+// POST to increment counter (called when user sends a message)
+app.post('/api/counter/increment', (req, res) => {
+    liveQuestionCount += 1;
+    // Broadcast to all connected presence clients
+    const data = JSON.stringify({ count: liveQuestionCount, online: connectedClients.size });
+    connectedClients.forEach(client => client.write(`data: ${data}\n\n`));
+    res.json({ count: liveQuestionCount });
+});
+
+// SSE endpoint for real-time presence & counter updates
+app.get('/api/presence', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    // Add this client
+    connectedClients.add(res);
+
+    // Send initial state immediately
+    res.write(`data: ${JSON.stringify({ count: liveQuestionCount, online: connectedClients.size })}\n\n`);
+
+    // Broadcast updated presence count to everyone
+    connectedClients.forEach(client => {
+        client.write(`data: ${JSON.stringify({ count: liveQuestionCount, online: connectedClients.size })}\n\n`);
+    });
+
+    // Heartbeat every 30s to keep connection alive
+    const heartbeat = setInterval(() => {
+        res.write(`data: ${JSON.stringify({ count: liveQuestionCount, online: connectedClients.size })}\n\n`);
+    }, 30000);
+
+    // Cleanup when client disconnects
+    req.on('close', () => {
+        clearInterval(heartbeat);
+        connectedClients.delete(res);
+        // Broadcast updated count to remaining clients
+        connectedClients.forEach(client => {
+            client.write(`data: ${JSON.stringify({ count: liveQuestionCount, online: connectedClients.size })}\n\n`);
+        });
+    });
+});
+
 // Serve frontend files
 app.use(express.static(__dirname));
 

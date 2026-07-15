@@ -48,7 +48,6 @@ let analytics = { totalMessages: 0, totalChats: 0, keywords: {}, dailyActivity: 
 const SESSIONS_KEY   = 'angelo_sessions';
 const ACTIVE_KEY     = 'angelo_active';
 const ANALYTICS_KEY  = 'angelo_analytics';
-const COUNTER_KEY    = 'angelo_live_counter';
 
 // ─── Marked config ───────────────────────────────────────────────────────────
 marked.setOptions({ breaks: true, gfm: true });
@@ -56,42 +55,33 @@ marked.setOptions({ breaks: true, gfm: true });
 // ─── Kiosk Attract Mode & Counter ─────────────────────────────────────────────
 function initAttractMode() {
     const attractExamples = [
-        "\"Write an ICSE Java program to check prime numbers\"",
-        "\"When do admissions start for 2026?\"",
-        "\"What is the difference between Array and Vector?\"",
-        "\"Write a program for Fibonacci series\"",
-        "\"Explain Object Oriented Programming to me\"",
-        "\"What are the school timings?\""
+        '"Write an ICSE Java program to check prime numbers"',
+        '"When do admissions start for 2026?"',
+        '"What is the difference between Array and Vector?"',
+        '"Write a program for Fibonacci series"',
+        '"Explain Object Oriented Programming to me"',
+        '"What are the school timings?"'
     ];
     let attractIndex = 0;
     const attractTextEl = document.getElementById('attractText');
-    const liveCounterNums = document.querySelectorAll('.liveCounterNumDisplay');
-    
-    // Counter logic
-    let savedCounter = localStorage.getItem(COUNTER_KEY);
-    if (!savedCounter) {
-        savedCounter = 247 + Math.floor(Math.random() * 20);
-        localStorage.setItem(COUNTER_KEY, savedCounter);
-    }
-    window.currentLiveCounter = parseInt(savedCounter, 10);
-    
-    function refreshCounterDisplay() {
-        if (liveCounterNums.length > 0) {
-            liveCounterNums.forEach(el => el.innerText = window.currentLiveCounter);
-        }
-    }
-    refreshCounterDisplay();
 
-    // Background ticking (simulate other users slowly)
-    setInterval(() => {
-        if (Math.random() > 0.5) { // 50% chance to tick up
-            window.currentLiveCounter += 1; // ONLY jump by exactly 1
-            localStorage.setItem(COUNTER_KEY, window.currentLiveCounter);
-            refreshCounterDisplay();
-        }
-    }, 20000); // Check every 20 seconds
+    // ─ Real-time server counter via SSE ─
+    const sse = new EventSource('/api/presence');
+    sse.onmessage = (e) => {
+        try {
+            const data = JSON.parse(e.data);
+            // Update all counter displays
+            document.querySelectorAll('.liveCounterNumDisplay').forEach(el => {
+                el.innerText = data.count;
+            });
+            // Update online badge if it exists
+            const onlineEl = document.getElementById('onlineCount');
+            if (onlineEl) onlineEl.innerText = data.online;
+        } catch (_) {}
+    };
+    sse.onerror = () => sse.close(); // gracefully handle if server is down
 
-    // Attract text cycling
+    // ─ Attract text cycling ─
     if (attractTextEl) {
         setInterval(() => {
             attractTextEl.style.opacity = 0;
@@ -106,6 +96,8 @@ function initAttractMode() {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 function init() {
+    // Clear any stale localStorage counter from old version
+    localStorage.removeItem('angelo_live_counter');
     initAttractMode();
     loadAnalytics();
     loadSessions();
@@ -423,13 +415,8 @@ async function handleSend() {
     sendBtn.disabled = true;
     showTyping();
 
-    // Increment live counter
-    if (typeof window.currentLiveCounter !== 'undefined') {
-        window.currentLiveCounter += 1;
-        localStorage.setItem(COUNTER_KEY, window.currentLiveCounter);
-        const liveCounterNums = document.querySelectorAll('.liveCounterNumDisplay');
-        liveCounterNums.forEach(el => el.innerText = window.currentLiveCounter);
-    }
+    // Increment live counter on the server (fire-and-forget)
+    fetch('/api/counter/increment', { method: 'POST' }).catch(() => {});
 
     // Update analytics
     trackMessage(text);
@@ -641,18 +628,31 @@ function addTTSButton(container, text) {
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.btn = btn;
         
-        // Find a natural-sounding English voice if available
-        const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(v => 
-            v.name.includes('Google UK English Male') || 
-            v.name.includes('Google US English') ||
-            v.name.includes('Microsoft Mark') ||
-            v.name.includes('Daniel')
-        ) || voices.find(v => v.lang.startsWith('en-'));
-        
-        if (preferredVoice) {
-            utterance.voice = preferredVoice;
+        // Pick the best available male English voice (priority order)
+        function pickVoice() {
+            const voices = window.speechSynthesis.getVoices();
+            const priority = [
+                'Google UK English Male',
+                'Microsoft Ryan Online (Natural) - English (United Kingdom)',
+                'Microsoft Guy Online (Natural) - English (United States)',
+                'Microsoft Mark - English (United States)',
+                'Daniel',          // macOS male
+                'Google US English',
+                'Alex',            // macOS fallback
+                'Fred',            // macOS fallback
+            ];
+            for (const name of priority) {
+                const match = voices.find(v => v.name === name);
+                if (match) return match;
+            }
+            // Last resort: any English voice
+            return voices.find(v => v.lang.startsWith('en-')) || null;
         }
+
+        const chosenVoice = pickVoice();
+        if (chosenVoice) utterance.voice = chosenVoice;
+        utterance.rate  = 0.95;  // slightly slower = clearer
+        utterance.pitch = 0.95;  // slightly deeper = more natural
         
         utterance.onstart = () => {
             btn.innerHTML = '<i class="ph ph-stop"></i> Stop';
