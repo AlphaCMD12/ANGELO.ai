@@ -93,16 +93,7 @@ function initAttractMode() {
         }, 6000);
     }
 
-    // ─ Welcome Clock ─
-    const clockEl = document.getElementById('welcomeClock');
-    if (clockEl) {
-        function updateClock() {
-            const now = new Date();
-            clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-        updateClock();
-        setInterval(updateClock, 1000);
-    }
+
 }
 
 // ─── Inactivity Reset (Kiosk) ──────────────────────────────────────────────────
@@ -137,6 +128,17 @@ function init() {
     loadAnalytics();
     loadSessions();
     resetInactivityTimer();
+
+    // ─ Header Clock ─
+    const clockEl = document.getElementById('headerClock');
+    if (clockEl) {
+        function updateClock() {
+            const now = new Date();
+            clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+    }
 
     // Event listeners
     sendBtn.addEventListener('click', handleSend);
