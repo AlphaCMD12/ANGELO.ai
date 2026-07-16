@@ -139,7 +139,7 @@ When users ask to see the school, awards, or photos, you MUST embed these images
 
 CRITICAL INSTRUCTION FOR IMAGES AND LINKS:
 Always format links using standard markdown: \`[Text](URL)\`.
-If a user asks to see pictures of the school or awards, you MUST reply with the embedded images using markdown: \`![Description](URL)\`.
+Whenever a user asks for general information about the school (e.g., "Tell me about Assembly of Angels"), you MUST proactively embed 1-2 of the provided school images in your response to make it visually engaging. Use the format: \`![Description](URL)\`.
 `;
 
 app.post('/api/chat', async (req, res) => {
