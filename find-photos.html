@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find My PEP Photos — ANGELO</title>
+    <meta name="description" content="Upload your selfie and ANGELO will find all your PEP 2026 event photos.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        :root {
+            --accent: #e5b61e;
+            --bg:     #0f0608;
+            --surface: rgba(255,255,255,0.04);
+            --border:  rgba(255,255,255,0.08);
+            --text:    #f5f5f5;
+            --muted:   rgba(255,255,255,0.42);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(229,182,30,0.08), transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(180,30,30,0.06), transparent 60%),
+                var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        /* ─── Header ─── */
+        header {
+            position: sticky; top: 0; z-index: 20;
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 24px;
+            background: rgba(15,6,8,0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+        header img { width: 34px; height: 34px; border-radius: 50%; object-fit: contain; }
+        header h1 { font-size: 17px; font-weight: 700; }
+        header a  { margin-left: auto; color: var(--muted); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+        header a:hover { color: var(--accent); }
+
+        /* ─── Layout ─── */
+        .container { max-width: 760px; margin: 0 auto; padding: 36px 20px; }
+
+        /* ─── Stage system ─── */
+        .stage { display: none; }
+        .stage.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+        /* ─── Cards ─── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 36px 32px;
+            text-align: center;
+        }
+        .card h2 { font-size: 22px; margin-bottom: 8px; }
+        .card > p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+
+        /* ─── Selfie UI ─── */
+        .face-circle {
+            width: 160px; height: 160px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 60px;
+            border: 2px dashed rgba(229,182,30,0.35);
+            cursor: pointer;
+            transition: all 0.25s;
+            overflow: hidden;
+            position: relative;
+        }
+        .face-circle:hover { border-color: var(--accent); background: rgba(229,182,30,0.05); }
+        .face-circle img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .face-circle .overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.45);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; opacity: 0;
+            border-radius: 50%;
+            transition: opacity 0.2s;
+        }
+        .face-circle:hover .overlay { opacity: 1; }
+
+        .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .btn {
+            padding: 11px 22px;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px; font-weight: 600;
+            cursor: pointer; border: none;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #e5b61e, #c9991a);
+            color: #000; width: 100%;
+            font-size: 16px; padding: 14px;
+        }
+        .btn-primary:hover   { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(229,182,30,0.3); }
+        .btn-primary:disabled { opacity: 0.38; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-ghost {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.08); }
+
+        /* ─── Processing ─── */
+        .spinner {
+            width: 52px; height: 52px;
+            border: 4px solid rgba(229,182,30,0.15);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #processingTitle   { font-size: 20px; margin-bottom: 6px; }
+        #processingSub     { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+        .progress-track {
+            background: rgba(255,255,255,0.07);
+            border-radius: 99px; height: 7px;
+            overflow: hidden; margin-bottom: 8px;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #e5b61e, #c9991a);
+            height: 100%; border-radius: 99px;
+            width: 0%; transition: width 0.4s ease;
+        }
+        #progressLabel { color: var(--muted); font-size: 12px; }
+
+        /* ─── Results ─── */
+        .results-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        .results-header h2 { font-size: 20px; }
+        #searchAgain {
+            font-size: 13px; padding: 8px 16px;
+            background: var(--surface); color: var(--text);
+            border: 1px solid var(--border); border-radius: 10px;
+            cursor: pointer; font-family: 'Outfit', sans-serif;
+            transition: all 0.2s;
+        }
+        #searchAgain:hover { background: rgba(255,255,255,0.08); }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 10px;
+        }
+        .photo-card {
+            position: relative; border-radius: 12px; overflow: hidden;
+            aspect-ratio: 4/3; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .photo-card:hover { transform: scale(1.03); }
+        .photo-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .match-badge {
+            position: absolute; bottom: 8px; right: 8px;
+            background: rgba(0,0,0,0.72);
+            color: #4ade80; font-size: 11px; font-weight: 700;
+            padding: 3px 10px; border-radius: 99px;
+            backdrop-filter: blur(4px);
+        }
+
+        .empty-state {
+            text-align: center; padding: 52px 20px;
+        }
+        .empty-icon { font-size: 52px; margin-bottom: 12px; }
+        .empty-state h3 { font-size: 18px; margin-bottom: 8px; }
+        .empty-state p  { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+        /* ─── Error ─── */
+        .error-strip {
+            background: rgba(248,113,113,0.1);
+            border: 1px solid rgba(248,113,113,0.25);
+            border-radius: 10px; padding: 12px 16px;
+            color: #f87171; font-size: 13px; line-height: 1.5;
+            margin-top: 14px; display: none;
+        }
+
+        /* ─── Lightbox ─── */
+        .lightbox {
+            position: fixed; inset: 0; z-index: 99;
+            background: rgba(0,0,0,0.93);
+            display: none; align-items: center; justify-content: center;
+            padding: 20px; flex-direction: column; gap: 16px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 100%; max-height: 78vh;
+            border-radius: 12px; object-fit: contain;
+        }
+        .lb-close {
+            position: fixed; top: 18px; right: 22px;
+            width: 38px; height: 38px; border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .lb-close:hover { background: rgba(255,255,255,0.2); }
+        .lb-download {
+            background: linear-gradient(135deg, #e5b61e, #c9991a);
+            color: #000; border: none; padding: 12px 28px;
+            border-radius: 12px; font-size: 15px; font-weight: 700;
+            font-family: 'Outfit', sans-serif; cursor: pointer;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.png" alt="ANGELO" onerror="this.style.display='none'">
+    <h1>Find My PEP Photos</h1>
+    <a href="/">← Back to ANGELO</a>
+</header>
+
+<div class="container">
+
+    <!-- Stage 1: Upload selfie -->
+    <div class="stage active" id="stageSelfie">
+        <div class="card">
+            <h2>Find yourself in PEP 2026 📸</h2>
+            <p>Upload or take a clear, front-facing photo of your face.<br>ANGELO's AI will scan all event photos and find the ones you're in.</p>
+
+            <div class="face-circle" id="faceCircle">
+                <span id="faceEmoji">🤳</span>
+                <img id="selfiePreview" alt="Your selfie">
+                <div class="overlay">📷</div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-ghost" id="cameraBtn">📷 Take Selfie</button>
+                <button class="btn btn-ghost" id="uploadBtn">📁 Upload Photo</button>
+            </div>
+
+            <button class="btn btn-primary" id="searchBtn" disabled>🔍 Find My Photos</button>
+            <div class="error-strip" id="selfieError"></div>
+        </div>
+        <input type="file" id="selfieFile"  accept="image/*" style="display:none">
+        <input type="file" id="cameraFile"  accept="image/*" capture="user" style="display:none">
+    </div>
+
+    <!-- Stage 2: Processing -->
+    <div class="stage" id="stageProcessing">
+        <div class="card">
+            <div class="spinner"></div>
+            <h2 id="processingTitle">Loading AI Models…</h2>
+            <p id="processingSub">Downloading face recognition models (~12 MB), cached after first use</p>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div id="progressLabel">Starting…</div>
+        </div>
+    </div>
+
+    <!-- Stage 3: Results -->
+    <div class="stage" id="stageResults">
+        <div class="results-header">
+            <h2 id="resultsTitle">Your Photos</h2>
+            <button id="searchAgain">🔍 Search Again</button>
+        </div>
+        <div class="photo-grid" id="photoGrid"></div>
+        <div class="empty-state" id="emptyState" style="display:none">
+            <div class="empty-icon">😕</div>
+            <h3>No matches found</h3>
+            <p>Try again with a clearer, well-lit, front-facing photo.<br>More event photos may also be uploaded soon — check back later!</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+    <span class="lb-close" id="lbClose">✕</span>
+    <img id="lbImg" src="" alt="Event photo">
+    <a class="lb-download" id="lbDownload" href="#" download target="_blank">⬇ Download Full Photo</a>
+</div>
+
+<script>
+const MODEL_URL       = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+const MATCH_THRESHOLD = 0.5;   // Euclidean distance — 0.5 ≈ 90% confidence
+const BATCH_SIZE      = 3;
+
+let modelsLoaded      = false;
+let selfieDescriptor  = null;
+let selfieObjectURL   = null;
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const [s1, s2, s3]  = ['stageSelfie','stageProcessing','stageResults'].map(id => document.getElementById(id));
+const faceCircle    = document.getElementById('faceCircle');
+const faceEmoji     = document.getElementById('faceEmoji');
+const selfiePreview = document.getElementById('selfiePreview');
+const selfieFile    = document.getElementById('selfieFile');
+const cameraFile    = document.getElementById('cameraFile');
+const searchBtn     = document.getElementById('searchBtn');
+const selfieError   = document.getElementById('selfieError');
+const progressFill  = document.getElementById('progressFill');
+const progressLabel = document.getElementById('progressLabel');
+const photoGrid     = document.getElementById('photoGrid');
+const emptyState    = document.getElementById('emptyState');
+
+function showStage(el) {
+    [s1, s2, s3].forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    window.scrollTo(0, 0);
+}
+
+function setProgress(pct, label) {
+    progressFill.style.width = pct + '%';
+    progressLabel.textContent = label;
+}
+
+function showSelfieError(msg) {
+    selfieError.textContent = msg;
+    selfieError.style.display = 'block';
+}
+function hideSelfieError() { selfieError.style.display = 'none'; }
+
+function applySelfie(file) {
+    if (selfieObjectURL) URL.revokeObjectURL(selfieObjectURL);
+    selfieObjectURL = URL.createObjectURL(file);
+    selfiePreview.src = selfieObjectURL;
+    selfiePreview.style.display = 'block';
+    faceEmoji.style.display = 'none';
+    searchBtn.disabled = false;
+    hideSelfieError();
+}
+
+faceCircle.addEventListener('click', () => selfieFile.click());
+document.getElementById('uploadBtn').addEventListener('click', () => selfieFile.click());
+document.getElementById('cameraBtn').addEventListener('click', () => cameraFile.click());
+selfieFile.addEventListener('change', e => { if (e.target.files[0]) applySelfie(e.target.files[0]); });
+cameraFile.addEventListener('change', e => { if (e.target.files[0]) applySelfie(e.target.files[0]); });
+
+// Pre-warm models in the background after page is idle
+window.addEventListener('load', () => {
+    setTimeout(async () => {
+        try {
+            await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+            modelsLoaded = true;
+        } catch(e) { /* will load on-demand when user searches */ }
+    }, 1500);
+});
+
+async function ensureModels() {
+    if (modelsLoaded) return;
+    document.getElementById('processingTitle').textContent = 'Loading AI Models…';
+    document.getElementById('processingSub').textContent   = 'Downloading face recognition models (~12 MB) — cached after first use';
+    setProgress(0, 'Loading detection model…');
+    await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+    setProgress(34, 'Loading landmark model…');
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    setProgress(67, 'Loading recognition model…');
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+    setProgress(100, 'Models ready!');
+    modelsLoaded = true;
+}
+
+function loadImg(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload  = () => resolve(img);
+        img.onerror = () => reject(new Error('Could not load: ' + src));
+        img.src = src;
+    });
+}
+
+function thumbUrl(url) {
+    // Insert Cloudinary resize transformation for fast processing
+    if (url.includes('res.cloudinary.com')) {
+        return url.replace('/upload/', '/upload/w_420,c_limit,q_75/');
+    }
+    return url;
+}
+
+searchBtn.addEventListener('click', async () => {
+    if (!selfieObjectURL) return;
+    hideSelfieError();
+    showStage(s2);
+
+    try {
+        // 1 – Load models
+        await ensureModels();
+
+        // 2 – Detect face in selfie
+        document.getElementById('processingTitle').textContent = 'Analysing Your Face…';
+        document.getElementById('processingSub').textContent   = 'Mapping your facial features';
+        setProgress(0, 'Processing your selfie…');
+
+        const selfieImg = await loadImg(selfieObjectURL);
+        const detection = await faceapi
+            .detectSingleFace(selfieImg, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+        if (!detection) {
+            showStage(s1);
+            showSelfieError('No face found in your photo. Try a well-lit, front-facing selfie with your full face visible.');
+            return;
+        }
+        selfieDescriptor = detection.descriptor;
+
+        // 3 – Fetch event photos from server
+        document.getElementById('processingTitle').textContent = 'Searching Event Photos…';
+        document.getElementById('processingSub').textContent   = 'Scanning all PEP 2026 photos for your face';
+        setProgress(3, 'Fetching photo list…');
+
+        const res    = await fetch('/api/event-photos');
+        const photos = await res.json();
+
+        if (photos.length === 0) {
+            showStage(s3);
+            document.getElementById('resultsTitle').textContent = 'No Photos Yet';
+            emptyState.style.display = 'block';
+            emptyState.innerHTML = `
+                <div class="empty-icon">📷</div>
+                <h3>Photos haven't been uploaded yet</h3>
+                <p>Photographers will upload PEP 2026 photos soon.<br>Come back and try again in a little while!</p>`;
+            photoGrid.innerHTML = '';
+            return;
+        }
+
+        // 4 – Compare against every event photo in batches
+        const matches = [];
+        for (let i = 0; i < photos.length; i += BATCH_SIZE) {
+            const batch = photos.slice(i, i + BATCH_SIZE);
+            const pct   = Math.round(3 + ((i / photos.length) * 93));
+            setProgress(pct, `Scanning photo ${Math.min(i + BATCH_SIZE, photos.length)} of ${photos.length}…`);
+
+            await Promise.all(batch.map(async photo => {
+                try {
+                    const img        = await loadImg(thumbUrl(photo.url));
+                    const detections = await faceapi
+                        .detectAllFaces(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.25 }))
+                        .withFaceLandmarks()
+                        .withFaceDescriptors();
+
+                    for (const det of detections) {
+                        const dist = faceapi.euclideanDistance(selfieDescriptor, det.descriptor);
+                        if (dist < MATCH_THRESHOLD) {
+                            const confidence = Math.max(50, Math.round((1 - dist / MATCH_THRESHOLD) * 100));
+                            matches.push({ url: photo.url, confidence });
+                            break; // only count each photo once
+                        }
+                    }
+                } catch(e) { /* silently skip photos that fail to load */ }
+            }));
+        }
+
+        setProgress(100, 'Done!');
+        matches.sort((a, b) => b.confidence - a.confidence);
+        showResults(matches);
+
+    } catch(e) {
+        console.error('Search error:', e);
+        showStage(s1);
+        showSelfieError('Something went wrong. Please try again.');
+    }
+});
+
+function showResults(matches) {
+    showStage(s3);
+    photoGrid.innerHTML = '';
+
+    if (matches.length === 0) {
+        emptyState.style.display = 'block';
+        document.getElementById('resultsTitle').textContent = 'No Matches Found';
+        return;
+    }
+
+    emptyState.style.display = 'none';
+    document.getElementById('resultsTitle').textContent =
+        `Found ${matches.length} Photo${matches.length !== 1 ? 's' : ''}! 🎉`;
+
+    photoGrid.innerHTML = matches.map(m => `
+        <div class="photo-card" onclick="openLightbox('${m.url}')">
+            <img src="${thumbUrl(m.url)}" alt="Your PEP photo" loading="lazy">
+            <div class="match-badge">✓ ${m.confidence}% match</div>
+        </div>
+    `).join('');
+}
+
+document.getElementById('searchAgain').addEventListener('click', () => {
+    selfieDescriptor = null;
+    selfiePreview.style.display = 'none';
+    faceEmoji.style.display     = '';
+    searchBtn.disabled          = true;
+    selfieFile.value            = '';
+    cameraFile.value            = '';
+    hideSelfieError();
+    showStage(s1);
+});
+
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+function openLightbox(url) {
+    document.getElementById('lbImg').src          = url;
+    document.getElementById('lbDownload').href    = url;
+    document.getElementById('lightbox').classList.add('open');
+}
+document.getElementById('lbClose').addEventListener('click', () => {
+    document.getElementById('lightbox').classList.remove('open');
+});
+document.getElementById('lightbox').addEventListener('click', e => {
+    if (e.target === document.getElementById('lightbox')) {
+        document.getElementById('lightbox').classList.remove('open');
+    }
+});
+</script>
+</body>
+</html>

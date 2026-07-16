@@ -13,7 +13,18 @@ app.use(cors());
 app.use(express.json());
 
 // ─── Live Counter & Presence ──────────────────────────────────────────────────
-let liveQuestionCount = 0; // starts at 0, only real messages increment it
+const fs = require('fs');
+const COUNTER_FILE = './counter.json';
+
+let liveQuestionCount = 0;
+try {
+    if (fs.existsSync(COUNTER_FILE)) {
+        liveQuestionCount = JSON.parse(fs.readFileSync(COUNTER_FILE, 'utf8')).count || 0;
+    }
+} catch (e) {
+    console.error('Failed to load counter:', e);
+}
+
 const connectedClients = new Set();
 
 // GET counter value
@@ -24,6 +35,14 @@ app.get('/api/counter', (req, res) => {
 // POST to increment counter (called when user sends a message)
 app.post('/api/counter/increment', (req, res) => {
     liveQuestionCount += 1;
+    
+    // Save to disk
+    try {
+        fs.writeFileSync(COUNTER_FILE, JSON.stringify({ count: liveQuestionCount }));
+    } catch (e) {
+        console.error('Failed to save counter:', e);
+    }
+    
     // Broadcast to all connected presence clients
     const data = JSON.stringify({ count: liveQuestionCount, online: connectedClients.size });
     connectedClients.forEach(client => client.write(`data: ${data}\n\n`));
@@ -61,6 +80,59 @@ app.get('/api/presence', (req, res) => {
         connectedClients.forEach(client => {
             client.write(`data: ${JSON.stringify({ count: liveQuestionCount, online: connectedClients.size })}\n\n`);
         });
+    });
+});
+
+// ─── PEP Face Search ──────────────────────────────────────────────────────────
+let cloudinary;
+try {
+    cloudinary = require('cloudinary').v2;
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key:    process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+} catch(e) {
+    console.log('[PEP] Cloudinary not installed yet. Run: npm install');
+}
+
+let photoCache = { photos: [], lastFetched: 0 };
+
+// List all event photos (with 60s cache to save API calls)
+app.get('/api/event-photos', async (req, res) => {
+    if (!cloudinary || !process.env.CLOUDINARY_CLOUD_NAME) {
+        return res.json([]);
+    }
+    const now = Date.now();
+    if (now - photoCache.lastFetched < 60000 && photoCache.photos.length > 0) {
+        return res.json(photoCache.photos);
+    }
+    try {
+        const result = await cloudinary.search
+            .expression('folder:pep2026')
+            .sort_by('created_at', 'desc')
+            .max_results(500)
+            .execute();
+        photoCache.photos = result.resources.map(r => ({ url: r.secure_url, id: r.public_id }));
+        photoCache.lastFetched = now;
+        res.json(photoCache.photos);
+    } catch(e) {
+        console.error('[PEP] Cloudinary fetch error:', e.message);
+        res.json(photoCache.photos); // return stale cache on error
+    }
+});
+
+// Called by upload page after each photo upload — busts cache so results update instantly
+app.post('/api/photo-uploaded', (req, res) => {
+    photoCache.lastFetched = 0;
+    res.json({ ok: true });
+});
+
+// Return Cloudinary config for the upload widget (no secrets exposed)
+app.get('/api/photo-config', (req, res) => {
+    res.json({
+        cloudName:    process.env.CLOUDINARY_CLOUD_NAME    || '',
+        uploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET || 'pep_upload'
     });
 });
 

@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "angelo-v2": "file:",
+    "cloudinary": "^2.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "duck-duck-scrape": "^2.2.7",
