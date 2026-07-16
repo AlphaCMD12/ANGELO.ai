@@ -286,7 +286,7 @@
 
 <script>
 const MODEL_URL       = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
-const MATCH_THRESHOLD = 0.5;   // Euclidean distance — 0.5 ≈ 90% confidence
+const MATCH_THRESHOLD = 0.58;   // Euclidean distance — 0.58 is more forgiving for group photos
 const BATCH_SIZE      = 3;
 
 let modelsLoaded      = false;
@@ -369,17 +369,17 @@ async function ensureModels() {
 function loadImg(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = 'anonymous';
+        if (src.startsWith('http')) img.crossOrigin = 'anonymous';
         img.onload  = () => resolve(img);
-        img.onerror = () => reject(new Error('Could not load: ' + src));
+        img.onerror = () => reject(new Error('Could not load image.'));
         img.src = src;
     });
 }
 
 function thumbUrl(url) {
-    // Insert Cloudinary resize transformation for fast processing
+    // Insert Cloudinary resize transformation for fast processing (1200px to detect smaller faces in group photos)
     if (url.includes('res.cloudinary.com')) {
-        return url.replace('/upload/', '/upload/w_420,c_limit,q_75/');
+        return url.replace('/upload/', '/upload/w_1200,c_limit,q_80/');
     }
     return url;
 }
@@ -442,7 +442,7 @@ searchBtn.addEventListener('click', async () => {
                 try {
                     const img        = await loadImg(thumbUrl(photo.url));
                     const detections = await faceapi
-                        .detectAllFaces(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.25 }))
+                        .detectAllFaces(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.15 }))
                         .withFaceLandmarks()
                         .withFaceDescriptors();
 
@@ -465,7 +465,7 @@ searchBtn.addEventListener('click', async () => {
     } catch(e) {
         console.error('Search error:', e);
         showStage(s1);
-        showSelfieError('Something went wrong. Please try again.');
+        showSelfieError('Error: ' + (e.message || e.toString()) + ' | Try refreshing.');
     }
 });
 
