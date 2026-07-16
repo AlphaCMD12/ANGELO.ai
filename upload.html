@@ -10,194 +10,307 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Outfit', sans-serif;
-            background: radial-gradient(ellipse at 30% 20%, rgba(229,182,30,0.08), transparent 60%),
-                        radial-gradient(ellipse at 80% 80%, rgba(180,30,30,0.06), transparent 60%),
-                        #0f0608;
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(229,182,30,0.08), transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(180,30,30,0.06), transparent 60%),
+                #0f0608;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            padding: 32px 20px 48px;
             color: #f5f5f5;
-            padding: 24px;
         }
         .logo {
-            width: 72px; height: 72px; border-radius: 50%;
-            margin-bottom: 18px;
-            animation: pulse 3s ease-in-out infinite;
+            width: 68px; height: 68px; border-radius: 50%;
+            margin-bottom: 16px;
+            animation: glow 3s ease-in-out infinite;
         }
-        @keyframes pulse {
+        @keyframes glow {
             0%,100% { filter: drop-shadow(0 0 0 rgba(229,182,30,0)); }
             50%      { filter: drop-shadow(0 0 18px rgba(229,182,30,0.5)); }
         }
-        h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; text-align: center; }
-        .subtitle { color: rgba(255,255,255,0.45); font-size: 14px; margin-bottom: 36px; text-align: center; max-width: 420px; line-height: 1.5; }
-
+        h1 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 6px; }
+        .sub {
+            color: rgba(255,255,255,0.42); font-size: 14px;
+            text-align: center; max-width: 400px; line-height: 1.6;
+            margin-bottom: 32px;
+        }
         .card {
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 20px;
-            padding: 36px 32px;
+            padding: 28px 24px;
             width: 100%; max-width: 520px;
-            text-align: center;
         }
-        .upload-zone {
+
+        /* Drop zone */
+        .drop-zone {
             border: 2px dashed rgba(229,182,30,0.3);
             border-radius: 14px;
-            padding: 40px 20px;
+            padding: 36px 20px;
+            text-align: center;
             cursor: pointer;
             transition: all 0.25s;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            position: relative;
         }
-        .upload-zone:hover { border-color: rgba(229,182,30,0.7); background: rgba(229,182,30,0.04); }
-        .upload-icon { font-size: 52px; margin-bottom: 12px; }
-        .upload-zone p { color: rgba(255,255,255,0.4); font-size: 13px; margin-top: 6px; }
+        .drop-zone.drag-over {
+            border-color: #e5b61e;
+            background: rgba(229,182,30,0.07);
+        }
+        .drop-zone .icon { font-size: 44px; margin-bottom: 10px; }
+        .drop-zone h3 { font-size: 16px; margin-bottom: 4px; }
+        .drop-zone p  { font-size: 13px; color: rgba(255,255,255,0.38); }
+        #fileInput { display: none; }
 
         .btn {
+            display: block; width: 100%;
+            padding: 14px;
             background: linear-gradient(135deg, #e5b61e, #c9991a);
-            color: #000;
-            border: none;
-            padding: 14px 36px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 700;
+            color: #000; font-weight: 700; font-size: 15px;
             font-family: 'Outfit', sans-serif;
-            cursor: pointer;
-            transition: all 0.2s;
-            width: 100%;
+            border: none; border-radius: 12px;
+            cursor: pointer; transition: all 0.2s;
         }
         .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(229,182,30,0.3); }
-        .btn:active { transform: translateY(0); }
-        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        .counter {
-            margin-top: 24px;
-            font-size: 14px;
-            color: rgba(255,255,255,0.45);
+        /* Stats row */
+        .stats {
+            display: flex; gap: 12px;
+            margin: 18px 0 0;
         }
-        .counter strong { color: #e5b61e; font-size: 28px; font-weight: 700; display: block; }
+        .stat {
+            flex: 1; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px; padding: 14px 12px;
+            text-align: center;
+        }
+        .stat strong { display: block; font-size: 26px; font-weight: 700; color: #e5b61e; }
+        .stat span   { font-size: 12px; color: rgba(255,255,255,0.38); }
 
-        .toast {
-            position: fixed;
-            bottom: 28px; left: 50%;
-            transform: translateX(-50%) translateY(80px);
-            background: #4ade80; color: #000;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 700; font-size: 14px;
-            transition: transform 0.35s cubic-bezier(.34,1.56,.64,1);
-            z-index: 99;
-            white-space: nowrap;
+        /* Queue list */
+        .queue { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .queue-item {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 10px 14px;
+            display: flex; align-items: center; gap: 12px;
+            font-size: 13px;
         }
-        .toast.show { transform: translateX(-50%) translateY(0); }
+        .queue-item .thumb {
+            width: 40px; height: 40px; border-radius: 6px;
+            object-fit: cover; flex-shrink: 0;
+        }
+        .queue-item .name {
+            flex: 1; overflow: hidden;
+            text-overflow: ellipsis; white-space: nowrap;
+            color: rgba(255,255,255,0.7);
+        }
+        .queue-item .status { flex-shrink: 0; font-size: 18px; }
+
+        /* Individual progress bar */
+        .item-progress {
+            height: 3px; border-radius: 99px;
+            background: rgba(255,255,255,0.07);
+            margin-top: 6px; overflow: hidden;
+        }
+        .item-progress-fill {
+            height: 100%; border-radius: 99px;
+            background: linear-gradient(90deg, #e5b61e, #c9991a);
+            width: 0%; transition: width 0.2s;
+        }
+        .item-inner { flex: 1; min-width: 0; }
+
+        .back {
+            display: block; margin-top: 24px;
+            color: rgba(255,255,255,0.3); font-size: 13px;
+            text-decoration: none; transition: color 0.2s;
+        }
+        .back:hover { color: #e5b61e; }
 
         .error-box {
             background: rgba(248,113,113,0.1);
-            border: 1px solid rgba(248,113,113,0.3);
-            border-radius: 10px;
-            padding: 14px 18px;
-            color: #f87171;
-            font-size: 14px;
-            line-height: 1.5;
-            display: none;
-            margin-top: 16px;
+            border: 1px solid rgba(248,113,113,0.25);
+            border-radius: 10px; padding: 12px 16px;
+            color: #f87171; font-size: 13px; line-height: 1.5;
+            margin-top: 14px;
         }
-        .back { display: block; margin-top: 24px; color: rgba(255,255,255,0.3); font-size: 13px; text-decoration: none; transition: color 0.2s; }
-        .back:hover { color: #e5b61e; }
     </style>
 </head>
 <body>
     <img src="logo.png" class="logo" alt="ANGELO" onerror="this.style.display='none'">
     <h1>📸 PEP 2026 Photo Upload</h1>
-    <p class="subtitle">For photographers only. Photos you upload will appear instantly in the visitor face-search feature.</p>
+    <p class="sub">For photographers only. Photos upload instantly and are searchable by visitors right away.</p>
 
-    <div class="card">
-        <div class="upload-zone" id="uploadZone">
-            <div class="upload-icon">🗂️</div>
-            <p style="font-size:15px; color:#f5f5f5; margin-bottom:4px;">Drag &amp; drop photos here</p>
-            <p>Supports JPG, PNG, WEBP • Up to 50 photos at once</p>
+    <div class="card" id="mainCard">
+        <div class="drop-zone" id="dropZone">
+            <div class="icon">🗂️</div>
+            <h3>Tap or drag photos here</h3>
+            <p>Select as many as you want — JPG, PNG, WEBP</p>
         </div>
 
-        <button class="btn" id="openWidget" disabled>Loading upload widget...</button>
+        <input type="file" id="fileInput" accept="image/*" multiple>
+        <button class="btn" id="uploadBtn" disabled>Select Photos</button>
 
-        <div class="counter">
-            <strong id="count">0</strong>
-            photos uploaded this session
+        <div class="stats">
+            <div class="stat"><strong id="countDone">0</strong><span>Uploaded</span></div>
+            <div class="stat"><strong id="countFail">0</strong><span>Failed</span></div>
+            <div class="stat"><strong id="countTotal">0</strong><span>Selected</span></div>
         </div>
 
-        <div class="error-box" id="errorBox"></div>
+        <div class="queue" id="queue"></div>
     </div>
 
     <a href="/" class="back">← Back to ANGELO</a>
-    <div class="toast" id="toast">✓ Photo uploaded successfully!</div>
 
-    <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
-    <script>
-        let uploadedCount = 0;
-        let widget = null;
+<script>
+let cloudName    = '';
+let uploadPreset = '';
+let uploadDone   = 0;
+let uploadFail   = 0;
+let isUploading  = false;
 
-        async function init() {
-            let config;
-            try {
-                const res = await fetch('/api/photo-config');
-                config = await res.json();
-            } catch(e) {
-                showError('Could not connect to server. Is ANGELO running?');
-                return;
+const dropZone   = document.getElementById('dropZone');
+const fileInput  = document.getElementById('fileInput');
+const uploadBtn  = document.getElementById('uploadBtn');
+const queue      = document.getElementById('queue');
+
+// Load config from server
+async function init() {
+    try {
+        const res  = await fetch('/api/photo-config');
+        const cfg  = await res.json();
+        cloudName    = cfg.cloudName;
+        uploadPreset = cfg.uploadPreset;
+
+        if (!cloudName) {
+            document.getElementById('mainCard').innerHTML = `
+                <div class="error-box">
+                    ⚠️ Cloudinary is not configured on the server yet.<br>
+                    Add <strong>CLOUDINARY_CLOUD_NAME</strong>, <strong>CLOUDINARY_API_KEY</strong>,
+                    <strong>CLOUDINARY_API_SECRET</strong>, and <strong>CLOUDINARY_UPLOAD_PRESET</strong>
+                    to your Render environment variables, then redeploy.
+                </div>`;
+            return;
+        }
+
+        uploadBtn.textContent = '📁 Select Photos';
+        uploadBtn.disabled    = false;
+
+    } catch(e) {
+        document.getElementById('mainCard').innerHTML =
+            '<div class="error-box">Could not connect to server. Is ANGELO running?</div>';
+    }
+}
+
+// Trigger file picker
+dropZone.addEventListener('click', () => fileInput.click());
+uploadBtn.addEventListener('click', () => fileInput.click());
+
+// Drag & drop
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', e => {
+    if (e.target.files.length) handleFiles(e.target.files);
+    fileInput.value = ''; // reset so same files can be re-selected
+});
+
+async function handleFiles(files) {
+    if (isUploading) return;
+    isUploading = true;
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Uploading…';
+
+    const fileArr = Array.from(files);
+    document.getElementById('countTotal').textContent = fileArr.length;
+
+    // Build queue UI
+    const items = fileArr.map((file, i) => {
+        const id  = 'qi-' + i;
+        const url = URL.createObjectURL(file);
+        const el  = document.createElement('div');
+        el.className = 'queue-item';
+        el.id = id;
+        el.innerHTML = `
+            <img class="thumb" src="${url}" alt="">
+            <div class="item-inner">
+                <div class="name">${file.name}</div>
+                <div class="item-progress"><div class="item-progress-fill" id="pf-${i}"></div></div>
+            </div>
+            <div class="status" id="st-${i}">⏳</div>`;
+        queue.appendChild(el);
+        return { file, id, idx: i };
+    });
+
+    // Upload concurrently in batches of 4
+    const BATCH = 4;
+    for (let b = 0; b < items.length; b += BATCH) {
+        await Promise.all(items.slice(b, b + BATCH).map(item => uploadFile(item)));
+    }
+
+    isUploading = false;
+    uploadBtn.disabled    = false;
+    uploadBtn.textContent = '📁 Select More Photos';
+}
+
+async function uploadFile({ file, idx }) {
+    const pfEl = document.getElementById('pf-' + idx);
+    const stEl = document.getElementById('st-' + idx);
+
+    try {
+        const formData = new FormData();
+        formData.append('file',           file);
+        formData.append('upload_preset',  uploadPreset);
+        formData.append('folder',         'pep2026');
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`);
+
+        // Track per-file progress
+        xhr.upload.onprogress = e => {
+            if (e.lengthComputable) {
+                pfEl.style.width = Math.round((e.loaded / e.total) * 100) + '%';
             }
+        };
 
-            if (!config.cloudName) {
-                showError('Cloudinary is not configured on the server yet.<br>Add <code>CLOUDINARY_CLOUD_NAME</code>, <code>CLOUDINARY_API_KEY</code>, <code>CLOUDINARY_API_SECRET</code>, and <code>CLOUDINARY_UPLOAD_PRESET</code> to your Render environment variables, then redeploy.');
-                return;
-            }
-
-            widget = cloudinary.createUploadWidget({
-                cloudName:    config.cloudName,
-                uploadPreset: config.uploadPreset,
-                folder:       'pep2026',
-                resourceType: 'image',
-                multiple:     true,
-                maxFiles:     50,
-                clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
-                showUploadMoreButton: true,
-                theme: 'minimal'
-            }, async (error, result) => {
-                if (error) {
-                    console.error(error);
-                    showError('Upload failed: ' + (error.message || error.statusText || 'Unknown error'));
-                    return;
-                }
-                if (result.event === 'success') {
-                    uploadedCount++;
-                    document.getElementById('count').textContent = uploadedCount;
-                    // Bust server cache so the photo is searchable immediately
+        await new Promise((resolve, reject) => {
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    pfEl.style.width = '100%';
+                    pfEl.style.background = '#4ade80';
+                    stEl.textContent = '✅';
+                    uploadDone++;
+                    document.getElementById('countDone').textContent = uploadDone;
+                    // Bust server photo cache
                     fetch('/api/photo-uploaded', { method: 'POST' }).catch(() => {});
-                    showToast();
+                    resolve();
+                } else {
+                    reject(new Error('HTTP ' + xhr.status));
                 }
-            });
+            };
+            xhr.onerror = () => reject(new Error('Network error'));
+            xhr.send(formData);
+        });
 
-            const btn = document.getElementById('openWidget');
-            btn.textContent = '📁 Select Photos to Upload';
-            btn.disabled = false;
-            btn.addEventListener('click', () => widget.open());
-            document.getElementById('uploadZone').addEventListener('click', () => widget.open());
-        }
+    } catch(e) {
+        pfEl.style.background = '#f87171';
+        stEl.textContent = '❌';
+        uploadFail++;
+        document.getElementById('countFail').textContent = uploadFail;
+        console.error('Upload failed for', file.name, e);
+    }
+}
 
-        function showToast() {
-            const t = document.getElementById('toast');
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2800);
-        }
-
-        function showError(html) {
-            const box = document.getElementById('errorBox');
-            box.innerHTML = html;
-            box.style.display = 'block';
-            document.getElementById('openWidget').disabled = true;
-            document.getElementById('openWidget').textContent = 'Not Available';
-        }
-
-        init();
-    </script>
+init();
+</script>
 </body>
 </html>
