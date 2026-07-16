@@ -292,6 +292,16 @@ html, body {
 .chat-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
 
 /* ─── Welcome Message ─────────────────────── */
+.welcome-clock {
+    font-size: 48px;
+    font-weight: 300;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -1px;
+    margin-bottom: 24px;
+    color: var(--text-primary);
+    text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    opacity: 0.9;
+}
 .welcome-message {
     margin: auto;
     text-align: center;
@@ -574,16 +584,24 @@ html, body {
 }
 
 /* ─── Typing Indicator ────────────────────── */
-.typing-indicator { display: flex; gap: 4px; padding: 4px 2px; }
-.typing-dot {
-    width: 7px; height: 7px;
-    background: var(--text-secondary);
-    border-radius: 50%;
-    animation: typingBounce 1.4s infinite ease-in-out both;
+.typing-indicator-new {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    padding: 2px 4px;
 }
-.typing-dot:nth-child(1) { animation-delay: -0.32s; }
-.typing-dot:nth-child(2) { animation-delay: -0.16s; }
-@keyframes typingBounce { 0%,80%,100% { transform:scale(0); } 40% { transform:scale(1); } }
+.typing-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    animation: typingAvatarPulse 1.5s infinite ease-in-out;
+}
+@keyframes typingAvatarPulse {
+    0%, 100% { transform: scale(0.9); opacity: 0.7; }
+    50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 8px rgba(229,182,30,0.6)); }
+}
 
 /* Streaming cursor */
 .streaming::after { content: '▋'; animation: blink 1s step-end infinite; color: var(--accent-color); }

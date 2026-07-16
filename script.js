@@ -92,7 +92,42 @@ function initAttractMode() {
             }, 500);
         }, 6000);
     }
+
+    // ─ Welcome Clock ─
+    const clockEl = document.getElementById('welcomeClock');
+    if (clockEl) {
+        function updateClock() {
+            const now = new Date();
+            clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+    }
 }
+
+// ─── Inactivity Reset (Kiosk) ──────────────────────────────────────────────────
+let inactivityTimer;
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    // 3 minutes = 180000 ms
+    inactivityTimer = setTimeout(() => {
+        // If not on welcome screen (has messages)
+        const s = getActiveSession();
+        if (s && s.messages.length > 0) {
+            createNewSession();
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            if (window.innerWidth <= 640 && sidebar) {
+                sidebar.classList.add('collapsed');
+                if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+            }
+        }
+    }, 180000);
+}
+// Listen to all interaction events to keep kiosk alive
+['mousemove', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+    window.addEventListener(evt, resetInactivityTimer, { passive: true });
+});
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 function init() {
@@ -101,6 +136,7 @@ function init() {
     initAttractMode();
     loadAnalytics();
     loadSessions();
+    resetInactivityTimer();
 
     // Event listeners
     sendBtn.addEventListener('click', handleSend);
@@ -377,10 +413,11 @@ function showTyping() {
     div.classList.add('message', 'bot');
     div.id = 'typingIndicator';
     div.innerHTML = `
-        <div class="avatar"><img src="logo.png" alt="ANGELO" onerror="this.style.display=\'none\'"></div>
+        <div class="avatar"><img src="logo.png" alt="ANGELO" onerror="this.style.display='none'"></div>
         <div class="message-content">
-            <div class="typing-indicator">
-                <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+            <div class="typing-indicator-new">
+                <img src="logo.png" class="typing-avatar" alt="ANGELO">
+                <span>ANGELO is thinking...</span>
             </div>
         </div>`;
     chatContainer.appendChild(div);
